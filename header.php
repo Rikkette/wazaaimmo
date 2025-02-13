@@ -1,29 +1,22 @@
 <?php
-session_start();
-
 // ---------------lance la session php.----------------//
 
-function ConnexionBDD()
+session_start(); // Commencer une session, fonction native
 
-//---------------info bdd------------------------------//
-
-{
-    $host = 'localhost';
+function ConnexionBase()
+{ // Infos pour trouver la BDD
+    $host = '127.0.0.1';
     $dbname = 'wazaabd';
-    $username = '';
+    $username = 'root';
     $password = '';
 
     try {
-        $connexion = new PDO(
+        $connexion = new PDO( // Connexion entre PHP et la BDD
             "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
             $username,
             $password
         );
-
-        // ------------------- si il y a une erreur cela afifchera une page erreur ---------------------//
-
-        $connexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
+        $connexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Juste pour une erreur 
         return $connexion;
     } catch (Exception $e) { // Attrape l'exception, si ça ne se connecte pas à la BDD
         echo "Erreur : " . $e->getMessage() . "<br>";
@@ -31,35 +24,90 @@ function ConnexionBDD()
         die("Fin du script");
     }
 }
-$db = ConnexionBDD(); // Connexion à la base de données
+$db = ConnexionBase(); // Connexion à la base de données
 
-// Vérifie si l'utilisateur est connecté
-$username = null;
-if (isset($_SESSION['user_id'])) {
-    $userId = $_SESSION['user_id'];
-    $userTypeS = $_SESSION['user_type'];
+// -----------------------------Créer/Insert - Create de CRUD--------------------------------//
 
-    // Récupération des informations de l'utilisateur
-    $stmtUser = $db->prepare("SELECT * FROM users WHERE id_user = :userId"); // Variable qui contient la préparation de la requête SQL
-    $stmtUser->execute(['userId' => $userId]);
-    $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $name = $_POST['name'];
+    $email = $_POST['email'];
 
-    if ($user) {
-        $username = $user['firstname_user'];
+    $sql = "INSERT INTO users (name, email) VALUES (:name, :email)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':name', $name);
+    $stmt->bindParam(':email', $email);
+
+    if ($stmt->execute()) {
+        echo "Utilisateur ajouté avec succès!";
+    } else {
+        echo "Erreur lors de l'ajout de l'utilisateur.";
     }
-} else {
-    $db = ConnexionBDD(); // Connexion à la base de données
-    // Défini le rôle d'utilisateur comme "Invité" si l'utilisateur n'est pas connecté
-    $_SESSION['user_type'] = 'Invite';
-    $_SESSION['user_id'] = null;
 }
 
-// Vérifie si l'utilisateur est admin
-$isAdmin = isset($_SESSION['user_type']) && in_array($_SESSION['user_type'], ['Admin']);
+// ---------------------------- lire/select - Read de CRUD--------------------------------//
 
+$sql = "SELECT * FROM users";
+$stmt = $pdo->query($sql);  //<----erreur ici //
+
+echo "<table>";
+echo "<tr><th>ID</th><th>Nom</th><th>Email</th><th>Actions</th></tr>";
+
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    echo "<tr>";
+    echo "<td>" . $row['id'] . "</td>";
+    echo "<td>" . $row['name'] . "</td>";
+    echo "<td>" . $row['email'] . "</td>";
+    echo "<td><a href='edit.php?id=" . $row['id'] . "'>Modifier</a> | <a href='delete.php?id=" . $row['id'] . "'>Supprimer</a></td>";
+    echo "</tr>";
+}
+echo "</table>";
+
+// ---------------------------- Mettre à jour - Update de CRUD--------------------------------//
+
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+
+    $sql = "SELECT * FROM users WHERE id = :id";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':id', $id);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $name = $_POST['name'];
+    $email = $_POST['email'];
+
+    $sql = "UPDATE users SET name = :name, email = :email WHERE id = :id";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':name', $name);
+    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':id', $id);
+
+    if ($stmt->execute()) {
+        echo "Utilisateur mis à jour!";
+    } else {
+        echo "Erreur de mise à jour!";
+    }
+}
+// ---------------------------- Supprimer - Delete de CRUD--------------------------------//
+
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+
+    $sql = "DELETE FROM users WHERE id = :id";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':id', $id);
+
+    if ($stmt->execute()) {
+        echo "Utilisateur supprimé!";
+    } else {
+        echo "Erreur lors de la suppression.";
+    }
+}
 ?>
-<!---------------------------------- html ----------------------------->
 
+<!------------------------------ html ----------------->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -71,20 +119,23 @@ $isAdmin = isset($_SESSION['user_type']) && in_array($_SESSION['user_type'], ['A
     <title></title>
 </head>
 
+<header>
+    <article id="logo">
+        <img src="style/wazaa_logo.png" alt="logoWazaaImmo" width="250" height="250">
+    </article>
+</header>
+
 <body>
-
-    <header>
-
-    </header>
-
     <main>
+            <!--------------------------partie html - Update de CRUD ----------------------->
+
+        <form action="edit.php?id=<?php echo $user['id']; ?>" method="POST">
+            <input type="text" name="name" value="<?php echo $user['name']; ?>" required>
+            <input type="email" name="email" value="<?php echo $user['email']; ?>" required>
+            <button type="submit">Mettre à jour</button>
+        </form>
 
     </main>
-
-    <footer>
-
-    </footer>
-    
 </body>
 
 </html>

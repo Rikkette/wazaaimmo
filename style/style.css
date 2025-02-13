@@ -11,3 +11,26 @@
 /* Extra small */
 @media screen and (max-width: 600px) {}
 
+
+/*---------------------------- Index CSS -------------------------------------*/
+
+.cards-container {
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-evenly;
+    padding: 20px;
+}
+
+.card {
+    width: 18rem;
+}
+
+/*---------------------------- P1 formulaire CSS------------------------------*/
+
+/*-----------------------------P2 A propos CSS-------------------------------------*/
+
+/*-----------------------------P3 Connexion CSS-------------------------------------*/
+
+
